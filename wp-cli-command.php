@@ -30,6 +30,10 @@ class Pingback_Debug_Command {
 
 		$metas = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key LIKE '_pingback_debug_%'", $post_id ) );
 
+		if ( true === empty( $metas ) ) {
+			WP_CLI::error( 'No failed pingbacks.' );
+		}
+
 		WP_CLI\Utils\format_items( 'table', $metas, array( 'meta_key', 'meta_value' ) );
 	}
 }
