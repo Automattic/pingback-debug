@@ -13,6 +13,10 @@
  * Domain Path: /languages
  */
 
+if ( true === defined( 'WP_CLI' ) && true === constant( 'WP_CLI' ) ) {
+	require_once( dirname( __FILE__ ) . '/wp-cli-command.php' );
+}
+
 function ping_debug_http_api_debug( $response, $context, $class, $args, $url ) {
 	include_once( ABSPATH . WPINC . '/class-IXR.php' );
 	include_once( ABSPATH . WPINC . '/class-wp-http-ixr-client.php' );
