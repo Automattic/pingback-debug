@@ -64,37 +64,50 @@ class Pingback_Debug_Command {
 		$post_links_temp = wp_extract_urls( $content );
 
 		foreach( (array) $post_links_temp as $link_test ) {
+
+			$post_links[ $link_test ] = array(
+				'URL'      => $link_test,
+				'Pung'     => 'false',
+				'Pingable' => 'true',
+				'Reason'   => 'Not enough data on what went wrong.',
+			);
+
 			if ( in_array( $link_test, $pung ) ) {
-				$post_links[] = array( 'URL' => $link_test, 'Pung' => 'true', 'Pingable' => 'false', 'Reason' => 'Was pung already.' );
+				$post_links[ $link_test ]['Pung']   = 'true';
+				$post_links[ $link_test ]['Reason'] = 'Was pung already.';
 				continue;
 			}
 			if ( ! empty( get_post_meta( $post->ID, '_pingback_debug_' . md5( $link_test ), true ) ) ) {
-				$post_links[] = array( 'URL' => $link_test, 'Pung' => 'true', 'Pingable' => 'true', 'Reason' => get_post_meta( $post->ID, '_pingback_debug_' . md5( $link_test ), true ) );
+				$post_links[ $link_test ]['Pung']   = 'true';
+				$post_links[ $link_test ]['Reason'] = get_post_meta( $post->ID, '_pingback_debug_' . md5( $link_test ), true );
 				continue;
 			}
 			if ( url_to_postid( $link_test ) == $post->ID ) {
-				$post_links[] = array( 'URL' => $link_test, 'Pung' => 'false', 'Pingable' => 'false', 'Reason' => 'A link to itself.' );
+				$post_links[ $link_test ]['Reason']   = 'A link to itself.';
+				$post_links[ $link_test ]['Pingable'] = 'false';
 				continue;
 			}
 			if ( is_local_attachment( $link_test ) ) {
-				$post_links[] = array( 'URL' => $link_test, 'Pung' => 'false', 'Pingable' => 'false', 'Reason' => 'Local attachments are never pinged.' );
+				$post_links[ $link_test ]['Reason']   = 'Local attachments are never pinged.';
+				$post_links[ $link_test ]['Pingable'] = 'false';
 				continue;
 			}
 			$test = @parse_url( $link_test );
 			if ( ! $test ) {
-				$post_links[] = array( 'URL' => $link_test, 'Pung' => 'false', 'Pingable' => 'false', 'Reason' => 'Unable to parse the URL.' );
+				$post_links[ $link_test ]['Reason']   = 'Unable to parse the URL.'; 
+				$post_links[ $link_test ]['Pingable'] = 'false';
 				continue;
 			}
 			if ( ! isset( $test['query'] ) && ! isset( $test['path'] ) || ( $test['path'] == '/' ) || ( $test['path'] == '' ) ) {
-				$post_links[] = array( 'URL' => $link_test, 'Pung' => 'false', 'Pingable' => 'false', 'Reason' => 'Missing query part and/or path in URL.' );
+				$post_links[ $link_test ]['Reason']   = 'Missing query part and/or path in URL.';
+				$post_links[ $link_test ]['Pingable'] = 'false';
 				continue;
 			}
 			$pingback_server_url = discover_pingback_server_uri( $link_test );
 			if ( false === $pingback_server_url ) {
-				$post_links[] = array( 'URL' => $link_test, 'Pung' => 'false', 'Pingable' => 'false', 'Reason' => 'Unable to discover the pingback server URL.' );
+				$post_links[ $link_test ]['Reason'] = 'Unable to discover the pingback server URL.';
 				continue;
 			}
-			$post_links[] = array( 'URL' => $link_test, 'Pung' => 'false', 'Pingable' => 'true', 'Reason' => 'Not enough data on what went wrong.' );
 		}
 
 		if ( true === empty( $post_links ) ) {
