@@ -21,6 +21,11 @@ function ping_debug_http_api_debug( $response, $context, $class, $args, $url ) {
 	include_once( ABSPATH . WPINC . '/class-IXR.php' );
 	include_once( ABSPATH . WPINC . '/class-wp-http-ixr-client.php' );
 	
+	// The $args['body'] has to be string, otherwise the IXR_Message won't be able to properly parse the message.
+	if ( false === is_string( $args['body'] ) ) {
+		return;
+	}
+
 	// Check whether we are hooked to a pingback action.
 	$message = new IXR_Message( $args['body' ] );
 	if ( ! $message->parse() || 'pingback.ping' !== $message->methodName ) {
@@ -30,7 +35,7 @@ function ping_debug_http_api_debug( $response, $context, $class, $args, $url ) {
 	
 	// Check whether the pingback action failed.
 	$response = new IXR_Message( $response[ 'body' ] );
-	if ( ! $response->parse() || ! isset( $response->faultCode ) || ! isset( $response->faultString ) ) {
+	if ( ! $response->parse() || ! isset( $response->faultCode ) || ! isset( $response->faultString ) || false === $response->faultCode ) {
 		return;
 	}
 	
