@@ -48,7 +48,11 @@ function ping_debug_http_api_debug( $response, $context, $class, $args, $url ) {
 		return;
 	}
 	$meta_key = '_pingback_debug_' . md5( $pagelinkedto );
-	update_post_meta( $post_id, $meta_key, $response->faultCode . ' : ' . $response->faultString );
+	$error = $response->faultCode;
+	if ( false === empty( $response->faultString ) ) {
+		$error .= ' : ' . $response->faultString;
+	}
+	update_post_meta( $post_id, $meta_key, $error );
 }
 
 add_action( 'http_api_debug', 'ping_debug_http_api_debug', 10, 5 );
