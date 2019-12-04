@@ -55,13 +55,64 @@ class Pingback_Debug_Command {
 			WP_CLI::error( 'Post not found.' );
 		}
 
-		$post_links = array();
-
-		$pung = get_pung( $post );
-
 		$content = $post->post_content;
 
 		$post_links_temp = wp_extract_urls( $content );
+
+		$post_links = $this->debug_urls( $post_links_temp, $post );
+
+		if ( true === empty( $post_links ) ) {
+			WP_CLI::error( 'No links found in the post.' );
+		}
+
+		WP_CLI\Utils\format_items( 'table', $post_links, array( 'URL', 'Pung', 'Pingable', 'Reason' ) );
+	}
+
+	/**
+ 	 * Collect data on a specific URL, eventually in terms of a post.
+ 	 *
+	 * <URL>
+	 * : URL to inspect. Ideally should be exactly the same as used in the post.
+	 *
+	 * [--post_id=<ID>]
+	 * : When provided, gets the data on the failure in terms of a specific post.
+	 *
+	 * ## Examples
+	 *
+	 *  wp pingback-debug example.org
+	 * 	wp pingback-debug example.org --post_id=10
+	 */
+	public function url( $args, $assoc_args ) {
+		$post = null;
+		$url  = $args[0];
+
+		if ( true === isset( $assoc_args['post_id'] ) ) {
+			$post_id = absint( $assoc_args['post_id'] );
+
+			if ( $post_id ) {
+				$post = get_post( $post_id );
+
+				if ( ! $post ) {
+					WP_CLI::error( 'Post not found.' );
+				}
+			}
+		}
+
+		$post_links = $this->debug_urls( array( $url ), $post );
+
+		WP_CLI\Utils\format_items( 'table', $post_links, array( 'URL', 'Pung', 'Pingable', 'Reason' ) );
+	}
+
+	private function debug_urls( $post_links_temp, $post = null )	{
+
+		$post_links = array();
+		$pung 		= array();
+		$post_id    = false;
+
+		if ( true === is_a( $post, 'WP_Post' ) ) {
+			$pung    = get_pung( $post );
+			$post_id = $post->ID;
+		}
 
 		foreach( (array) $post_links_temp as $link_test ) {
 
@@ -77,12 +128,12 @@ class Pingback_Debug_Command {
 				$post_links[ $link_test ]['Reason'] = 'Was pung already.';
 				continue;
 			}
-			if ( ! empty( get_post_meta( $post->ID, '_pingback_debug_' . md5( $link_test ), true ) ) ) {
+			if ( $post_id &&  ! empty( get_post_meta( $post_id, '_pingback_debug_' . md5( $link_test ), true ) ) ) {
 				$post_links[ $link_test ]['Pung']   = 'true';
-				$post_links[ $link_test ]['Reason'] = get_post_meta( $post->ID, '_pingback_debug_' . md5( $link_test ), true );
+				$post_links[ $link_test ]['Reason'] = get_post_meta( $post_id, '_pingback_debug_' . md5( $link_test ), true );
 				continue;
 			}
-			if ( url_to_postid( $link_test ) == $post->ID ) {
+			if ( url_to_postid( $link_test ) == $post_id ) {
 				$post_links[ $link_test ]['Reason']   = 'A link to itself.';
 				$post_links[ $link_test ]['Pingable'] = 'false';
 				continue;
@@ -110,11 +161,7 @@ class Pingback_Debug_Command {
 			}
 		}
 
-		if ( true === empty( $post_links ) ) {
-			WP_CLI::error( 'No links found in the post.' );
-		}
-
-		WP_CLI\Utils\format_items( 'table', $post_links, array( 'URL', 'Pung', 'Pingable', 'Reason' ) );
+		return $post_links;
 	}
 }
 
