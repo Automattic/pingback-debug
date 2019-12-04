@@ -26,7 +26,7 @@ class Pingback_Debug_Command {
 	public function failed( $args, $assoc_args ) {
 		global $wpdb;
 
-		$post_id = intval( $args[0] );
+		$post_id = absint( $args[0] );
 
 		$metas = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key LIKE '_pingback_debug_%'", $post_id ) );
 
@@ -48,7 +48,7 @@ class Pingback_Debug_Command {
 	 *	wp pingback-debug post 44
 	 */
 	public function post( $args, $assoc_args ) {
-		$post_id = intval( $args[0] );
+		$post_id = absint( $args[0] );
 
 		$post = get_post( $post_id );
 		if ( ! $post ) {
