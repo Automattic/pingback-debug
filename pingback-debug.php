@@ -32,27 +32,35 @@ function ping_debug_http_api_debug( $response, $context, $class, $args, $url ) {
 		return;
 	}
 
+	// Extract the necessary data.
+	$pagelinkedfrom = str_replace( '&amp;', '&', $message->params[0] );
+	$pagelinkedto   = str_replace( '&amp;', '&', $message->params[1] );
+	$pagelinkedto   = str_replace( '&', '&amp;', $pagelinkedto );
+
+	// Check whether the request failed.
+	if ( true === is_wp_error( $response ) ) {
+		$post_id = url_to_postid( $pagelinkedfrom );
+		if ( $post_id ) {
+			update_post_meta( $post_id, '_pingback_debug_' . md5( $pagelinkedto ), $response->get_error_message() );
+		}
+		return;
+	}
 	
-	// Check whether the pingback action failed.
+	// Check whether the pingback itself failed.
 	$response = new IXR_Message( $response[ 'body' ] );
 	if ( ! $response->parse() || ! isset( $response->faultCode ) || ! isset( $response->faultString ) || false === $response->faultCode ) {
 		return;
 	}
 	
 	// Store the data.
-	$pagelinkedfrom = str_replace( '&amp;', '&', $message->params[0] );
-	$pagelinkedto   = str_replace( '&amp;', '&', $message->params[1] );
-	$pagelinkedto   = str_replace( '&', '&amp;', $pagelinkedto );	
 	$post_id = url_to_postid( $pagelinkedfrom );
-	if ( ! $post_id ) {
-		return;
+	if ( $post_id ) {
+		$error = $response->faultCode;
+		if ( false === empty( $response->faultString ) ) {
+			$error .= ' : ' . $response->faultString;
+		}
+		update_post_meta( $post_id, '_pingback_debug_' . md5( $pagelinkedto ), $error );
 	}
-	$meta_key = '_pingback_debug_' . md5( $pagelinkedto );
-	$error = $response->faultCode;
-	if ( false === empty( $response->faultString ) ) {
-		$error .= ' : ' . $response->faultString;
-	}
-	update_post_meta( $post_id, $meta_key, $error );
 }
 
 add_action( 'http_api_debug', 'ping_debug_http_api_debug', 10, 5 );
